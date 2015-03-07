@@ -1,146 +1,102 @@
-# Foundation Tasks (v4.0) 3/6/2015
+# Foundation Messenger (v4.0) 3/6/2015
 
 Nicholas Ventimiglia | AvariceOnline.com
 
-## Unity3d Async Task Library
+The Messenger is a static application service for relaying events (messages)
+in a loosely coupled way. Any object may be "Published" through the messenger
+and handled by methods (or coroutines) through the app.
 
-A utility library inspired by Task Parallelism Library, but made especially for Unity3d. Supports running and waiting on actions running in background threads. Supports running and waiting on coroutines. Supports coroutines with return results and exception messages !
+- Support for objects, structs, enums and interfaces
 
- - Tasks support running on the main thread, background thread or as coroutines.
- - Tasks support return results. 
- - Wait for your tasks to complete in a coroutine or as a thread blocking call
- - Grace full exception handling (IsFaulted ?)
+- Support for caching. This allows for publishing then subscribing and then receiving
+  a message in that order. This is useful for one time messages like authentication.
 
-## Structure
+- Use the IMessengerObject interface to add a Publish() extension method to your message.
 
-- The "Foundation Tasks" folder contains a very basic example
-- The "Foundation.Tasks" folder contains the plugin source code
-
-## Setup
-
-Drop the Foundation.Tasks.dll into your plug in folder
-
-
-## Use
-
-####Run
-Tasks have a static factory "Run" method which will create a new task in that started state. This method has overrides for every conscionable situation.
-You may also construct a task yourself and start it yourself.
-
-####Strategy
-Tasks have a number of strategies you can choose from.
- - Run in Background thread
- - Run in a coroutine via the task manager
- - Run in the current thread
- - Run on the main thread
- - Run a custom strategy. This is useful if you want to manually set the task's state, result and exception. 
+- Supports [Subscribe] annotation. Using this annotation unlocks the Subscribe(object) helper method.
+  This helper method allows for the subscribe of all decorated methods automagically.
   
-####ContinueWith
-ContinueWith is a extension method which allows you to execute a piece of code after the task is complete. This is useful with the coroutine strategy
-as a way to populate the Result property. You may chain multiple continue with's
+- Support for coroutines event handling.
 
-####Wait
-- Wait will hault the thread until the task is complete. Only call this from a background thread. DO NO CALL THIS IN THE MAIN THREAD.
-- WaitRoutine is a Coroutine that you may start. This routine will continue until the task is complete. Use this in the main thread.
 
-####TaskManager
-The task manager is a monobehaviours which interfaces the task's with unity. It is responsible for executing on the main thread and running coroutines.
-You dont need to add this object to your scene, it is added automatically.
+##Setup
+Make sure the files exist in your project.
 
-## Debugging
+##Use
 
-I have a static flag to disable background threads. This will cause Unity
-to act funny (pausing the main thread), but, you will get a complete stack trace.
+####Subscribing
 
-````c#
-    /// <summary>
-    /// Forces use of a single thread for debugging
-    /// </summary>
-    public static bool DisableMultiThread = false;
+Subscribing is the wiring of methods to the messenger. Methods must take a single
+argument of the message type they are handling. When a message of the appropriate type
+is publish the method will be called.
 
-    /// <summary>
-    /// Logs Exceptions
-    /// </summary>
-    public static bool LogErrors = false;
-
-````
-
-## Examples
-
-```c#
-		IEnumerator HowToUse()
+    public class MyHandler: MonoBehaviour
+    {
+        void Awake()
         {
-			// Pass in an action, function, method or coroutine
-            var task = Task.Run(() =>
-            {
-				//Debug.Log does not work in
-                Debug.Log("Sleeping...");
-                Task.Delay(2000);
-                Debug.Log("Slept");
-            });
-
-			// wait for it
-            yield return StartCoroutine(task.WaitRoutine());
-
-			// check exceptions
-			if(task.IsFaulted)
-				Debug.LogException(task.Exception)
-
-			//Valid if this method returned something
-			//var result = task.Result;
-
+            // Subscribe using the [Subscribe] annotation
+            Messenger.Subscribe(this);
+			
+			// Subscribe manually
+            Messenger<MessageType>.Subscribe(MyHandler);
+						
+            // Subscribe manually
+            Messenger<MessageType>.SubscribeCortoutine(MyCoroutineHandler);
         }
-		
-		// Run a Task on the main thread
-        Task.RunOnMain(() =>
-        {
-            Debug.Log("Sleeping...");
-            Task.Delay(2000);
-            Debug.Log("Slept");
-        });
-        
 
-		// Run a Task on a background thread
-        Task.Run(() =>
+        void OnDestroy()
         {
-            Debug.Log("("Sleeping...");
-            Task.Delay(2000);
-            Debug.Log("("Slept");
-        });
-        
+            // Unsubscribe using the [Subscribe] annotation
+            Messenger.Unsubscribe(this);
+			
+			// Unsubscribe manually
+            Messenger<MessageType>.Unsubscribe(MyHandler);
+						
+            // Unsubscribe manually
+            Messenger<MessageType>.UnsubscribeCortoutine(MyCoroutineHandler);
+        }
 
-		// Run a coroutine as a tasks
-		Task.RunCoroutine(RoutineFunction());
-        
-		IEnumerator RoutineFunction(){
-			Debug.LogOutput("Sleeping...");
-			yield return new WaitForSeconds(2);
-			Debug.LogOutput("Slept");
-		}
-       
-		// Run a background task that then runs a task on the main thread
-		Task.Run(() =>
-		{
-			Debug.Log("("Thread A Sleep");
-			Task.Delay(2000);
-			Debug.Log("("Thread A Awake");
-			Task.RunOnMain(() =>
-			{
-				Debug.Log("Sleeping...");
-				Task.Delay(2000);
-				Debug.Log("Slept");
-			});
-			Debug.Log("Thread B By");
-		});     
-		
-		// Run a coroutine with a task as the parameter        
-		Task.RunCoroutine<string>(RoutineFunction());
-        
-		IEnumerator RoutineFunction(Task<string> task){
-			// manually set State / Exception / Result
-		}
-   
-```
+		[Subscribe]
+		public void MyHandler(MessageType arg);
+
+		[Subscribe]
+		public IEnumerator MyCoroutineHandler(MessageType arg);
+	}
+
+####Publishing
+
+Publishing is the sending a message to subscribed members.
+
+    public class MyPublisher: MonoBehaviour
+    {
+        void Awake()
+        {
+			var message = new MessageType();
+
+			// publish using the IMessengerObject Extension Method
+			message.Publish();
+
+			// publish Manually
+			Messenger.Publish(message);
+        }
+	}
+
+####Caching
+
+Messages may be cached. When cached the message will be saved and issued to late subscribers.
+
+	// Cache the message
+	[CachedMessage]
+
+	// or
+
+	// Cache the message and clear the cache of old messages of the same type
+	[CachedMessage(OnePerType=true)]
+
+    public class MessageType : IMessengerObject
+    {
+
+	}
 
 ## More
 
