@@ -4,7 +4,7 @@
 //  Product		: Unity3d Foundation
 //  Published		: 2015
 //  -------------------------------------
-namespace Foundation.Messenger
+namespace Foundation.Messenging
 {
     /// <summary>
     /// Extension interface. Include messenger extension methods for messenger objects.

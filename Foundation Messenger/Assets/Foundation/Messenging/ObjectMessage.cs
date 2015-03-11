@@ -4,11 +4,12 @@
 //  Product		: Unity3d Foundation
 //  Published		: 2015
 //  -------------------------------------
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Foundation.Messenger
+namespace Foundation.Messenging
 {
     /// <summary>
     /// an abstract weak-event message for object signals.

@@ -4,9 +4,10 @@
 //  Product		: Unity3d Foundation
 //  Published		: 2015
 //  -------------------------------------
+
 using UnityEngine;
 
-namespace Foundation.Messenger
+namespace Foundation.Messenging
 {
     /// <summary>
     /// For passing messages to coroutines
