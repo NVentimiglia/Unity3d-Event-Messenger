@@ -1,6 +1,6 @@
-# Foundation Messenger (v4.0) 3/6/2015
+# Foundation Messenger 
 
-Nicholas Ventimiglia | AvariceOnline.com
+3/24/2015 | Nicholas Ventimiglia | AvariceOnline.com
 
 The Messenger is a static application service for relaying events (messages)
 in a loosely coupled way. Any object may be "Published" through the messenger
@@ -18,6 +18,9 @@ and handled by methods (or coroutines) through the app.
   
 - Support for coroutines event handling.
 
+
+###Platforms
+Desktop, Webplayer, iOS, Android, Windows Store
 
 ##Setup
 Make sure the files exist in your project.

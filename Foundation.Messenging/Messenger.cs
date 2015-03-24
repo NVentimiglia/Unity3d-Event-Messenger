@@ -9,8 +9,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
+#if UNITY_WSA
+using System.Reflection;
+#endif
 
 namespace Foundation.Messenging
 {
@@ -96,6 +98,27 @@ namespace Foundation.Messenging
 
         static void Invoke(Delegate handler, object message)
         {
+#if UNITY_WSA
+            var method = handler.GetMethodInfo();
+            if (method.ReturnType == typeof(IEnumerator))
+            {
+                var mono = handler.Target as MonoBehaviour;
+
+                if (mono != null)
+                {
+                    mono.StartCoroutine(method.Name, message);
+                }
+                else
+                {
+                    MessengerHandler.Instance.StartCoroutine((IEnumerator)method.Invoke(handler.Target, new[] { message }));
+                }
+
+            }
+            else
+            {
+                handler.DynamicInvoke(message);
+            }
+#else
             if (handler.Method.ReturnType == typeof(IEnumerator))
             {
                 var mono = handler.Target as MonoBehaviour;
@@ -114,6 +137,7 @@ namespace Foundation.Messenging
             {
                 handler.DynamicInvoke(message);
             }
+#endif
         }
 
         /// <summary>
@@ -128,9 +152,12 @@ namespace Foundation.Messenging
                 // is message type 
                 subscriptionType == messagetype
                 // or handler is an interface of message
+#if UNITY_WSA
+                || (CheckSubclasses && messagetype.GetTypeInfo().IsSubclassOf(subscriptionType))
+                || (CheckSubclasses && messagetype.GetTypeInfo().ImplementedInterfaces.Contains(subscriptionType))
+#else
                 || (CheckSubclasses && subscriptionType.IsAssignableFrom(messagetype))
-                // Above statement includes interfaces
-                //|| (CheckSubclasses && mtype.IsSubclassOf(sub.MessageType))
+#endif
                 );
         }
         #endregion
@@ -163,8 +190,12 @@ namespace Foundation.Messenging
         {
             lock (Subscriptions)
             {
+#if UNITY_WSA 
+                var methods = instance.GetType().GetTypeInfo().DeclaredMethods.Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
+#else 
                 var methods = instance.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
-
+#endif
+          
                 foreach (var methodInfo in methods)
                 {
                     var ps = methodInfo.GetParameters();
@@ -273,7 +304,7 @@ namespace Foundation.Messenging
                     Invoke(subs[j].Handler, m);
                 }
             }
-
+#if UNITY_WSA
             if (HasAttribute<CachedMessage>(mType))
             {
                 if (GetAttribute<CachedMessage>(mType).OnePerType)
@@ -282,6 +313,17 @@ namespace Foundation.Messenging
                     RemoveCache(m);
                 AddCache(mType, m);
             }
+#else
+            if (HasAttribute<CachedMessage>(mType))
+            {
+                if (GetAttribute<CachedMessage>(mType).OnePerType)
+                    ClearCache(mType);
+                else
+                    RemoveCache(m);
+                AddCache(mType, m);
+            }
+#endif
+
         }
         #endregion
 
@@ -443,7 +485,26 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static bool HasAttribute<T>(MemberInfo m) where T : Attribute
         {
+#if UNITY_WSA
+            return m.GetCustomAttribute<T>() != null;
+#else
             return Attribute.IsDefined(m, typeof(T));
+#endif
+        }
+
+        /// <summary>
+        /// return Attribute.IsDefined(m, typeof(T));
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        static bool HasAttribute<T>(Type m) where T : Attribute
+        {
+#if UNITY_WSA
+            return m.GetTypeInfo().GetCustomAttribute<T>() != null;
+#else
+            return Attribute.IsDefined(m, typeof(T));
+#endif
         }
 
         /// <summary>
@@ -454,7 +515,26 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static T GetAttribute<T>(MemberInfo m) where T : Attribute
         {
+#if UNITY_WSA
             return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
+#else
+            return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
+#endif
+        }
+
+        /// <summary>
+        ///  return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        static T GetAttribute<T>(Type m) where T : Attribute
+        {
+#if UNITY_WSA
+            return m.GetTypeInfo().GetCustomAttribute<T>();
+#else
+            return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
+#endif
         }
         #endregion
     }

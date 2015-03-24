@@ -34,7 +34,11 @@ namespace Foundation.Messenging
         {
             if (Messenger.ContainsKey(obj))
             {
-                Messenger[obj].ForEach(o => o.Invoke(msg));
+                var list = Messenger[obj];
+                foreach (var o in list)
+                {
+                    o.Invoke(msg);
+                }
                 return true;
             }
             return false;
