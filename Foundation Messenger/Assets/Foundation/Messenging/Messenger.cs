@@ -10,9 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-#if UNITY_WSA
 using System.Reflection;
-#endif
 
 namespace Foundation.Messenging
 {
@@ -192,10 +190,10 @@ namespace Foundation.Messenging
             {
 #if UNITY_WSA && !UNITY_EDITOR
                 var methods = instance.GetType().GetRuntimeMethods().Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
-#else 
+#else
                 var methods = instance.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
 #endif
-          
+
                 foreach (var methodInfo in methods)
                 {
                     var ps = methodInfo.GetParameters();
