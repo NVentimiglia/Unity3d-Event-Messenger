@@ -98,7 +98,7 @@ namespace Foundation.Messenging
 
         static void Invoke(Delegate handler, object message)
         {
-#if UNITY_WSA
+#if UNITY_WSA && !UNITY_EDITOR
             var method = handler.GetMethodInfo();
             if (method.ReturnType == typeof(IEnumerator))
             {
@@ -152,7 +152,7 @@ namespace Foundation.Messenging
                 // is message type 
                 subscriptionType == messagetype
                 // or handler is an interface of message
-#if UNITY_WSA
+#if UNITY_WSA && !UNITY_EDITOR
                 || (CheckSubclasses && messagetype.GetTypeInfo().IsSubclassOf(subscriptionType))
                 || (CheckSubclasses && messagetype.GetTypeInfo().ImplementedInterfaces.Contains(subscriptionType))
 #else
@@ -190,7 +190,7 @@ namespace Foundation.Messenging
         {
             lock (Subscriptions)
             {
-#if UNITY_WSA 
+#if UNITY_WSA && !UNITY_EDITOR
                 var methods = instance.GetType().GetTypeInfo().DeclaredMethods.Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
 #else 
                 var methods = instance.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
@@ -485,8 +485,8 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static bool HasAttribute<T>(MemberInfo m) where T : Attribute
         {
-#if UNITY_WSA
-            return m.GetCustomAttribute<T>() != null;
+#if UNITY_WSA  && !UNITY_EDITOR
+            return m.CustomAttributes.Any(o => o.AttributeType == typeof(T));
 #else
             return Attribute.IsDefined(m, typeof(T));
 #endif
@@ -500,8 +500,8 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static bool HasAttribute<T>(Type m) where T : Attribute
         {
-#if UNITY_WSA
-            return m.GetTypeInfo().GetCustomAttribute<T>() != null;
+#if UNITY_WSA  && !UNITY_EDITOR
+            return m.GetTypeInfo().CustomAttributes.Any(o => o.AttributeType == typeof(T));
 #else
             return Attribute.IsDefined(m, typeof(T));
 #endif
@@ -515,7 +515,7 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static T GetAttribute<T>(MemberInfo m) where T : Attribute
         {
-#if UNITY_WSA
+#if UNITY_WSA  && !UNITY_EDITOR
             return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
 #else
             return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
@@ -530,7 +530,7 @@ namespace Foundation.Messenging
         /// <returns></returns>
         static T GetAttribute<T>(Type m) where T : Attribute
         {
-#if UNITY_WSA
+#if UNITY_WSA  && !UNITY_EDITOR
             return m.GetTypeInfo().GetCustomAttribute<T>();
 #else
             return m.GetCustomAttributes(typeof(T), true).FirstOrDefault() as T;
