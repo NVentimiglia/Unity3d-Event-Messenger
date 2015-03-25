@@ -191,7 +191,7 @@ namespace Foundation.Messenging
             lock (Subscriptions)
             {
 #if UNITY_WSA && !UNITY_EDITOR
-                var methods = instance.GetType().GetTypeInfo().DeclaredMethods.Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
+                var methods = instance.GetType().GetRuntimeMethods().Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
 #else 
                 var methods = instance.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public).Where(o => HasAttribute<SubscribeAttribute>(o)).ToArray();
 #endif
