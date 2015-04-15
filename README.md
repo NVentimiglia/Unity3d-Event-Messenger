@@ -14,7 +14,7 @@ and handled by methods (or coroutines) through the app.
 - Use the IMessengerObject interface to add a Publish() extension method to your message.
 
 - Supports [Subscribe] annotation. Using this annotation unlocks the Subscribe(object) helper method.
-  This helper method allows for the subscribe of all decorated methods automagically.
+  This helper method allows for the subscribe of all decorated methods auto-magically.
   
 - Support for coroutines event handling.
 
